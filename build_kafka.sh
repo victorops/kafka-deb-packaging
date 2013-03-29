@@ -58,12 +58,16 @@ if [ "$gitrepo" != "" ]; then
         cp ${origdir}/sbt/sbt ./${kafka_src_dir}/sbt
         cp ${origdir}/sbt/sbt-launch.jar ./${kafka_src_dir}/lib/sbt-launch.jar
     fi
+
+    sbt_command=assembly
 else
     #_ MAIN _#
     if [[ ! -f "${src_package}" ]]; then
       wget -O ${origdir}/${src_package} ${download_url}
     fi
     tar zxf ${origdir}/${src_package}
+
+    sbt_command=package
 fi
 
 # Build kafka from source
@@ -71,17 +75,17 @@ cd ${kafka_src_dir}
 echo sbt update
 ./sbt update
 echo "****** Building... ******"
-echo sbt \"++${scala_version} package\"
-./sbt "++${scala_version} package"
+echo sbt \"++${scala_version} $sbt_command\"
+./sbt "++${scala_version} $sbt_command"
 
-# Prep for building the package; copy over the upstat scripts and so on
+# Prep for building the Debian package; copy over the upstat scripts and so on
 cp ${origdir}/kafka-broker.default ../build/etc/default/kafka-broker
 cp ${origdir}/kafka-broker.upstart.conf ../build/etc/init/kafka-broker.conf
 mv config/log4j.properties config/server.properties ../build/etc/kafka
 mv * ../build/usr/lib/kafka
 cd ../build
 
-# Build the package; fpm is a rubygem.  Need Ruby 1.8, rubygems and "gem install fpm".
+# Build the Debian package; fpm is a rubygem.  Need Ruby 1.8, rubygems and "gem install fpm".
 fpm -t deb \
     -n ${name} \
     -v ${version}${package_version} \
